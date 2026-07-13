@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Load Balancer Dashboard</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-top: 20px;
+            font-size: 22px;
+        }
+
+        .container {
+            margin-top: 20px;
+            background: #111827;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            background: #0b1220;
+            border-radius: 10px;
+        }
+
+        .container {
+            margin-top: 20px;
+            background: #111827;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+        }
+
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .server1 { background: red; }
+        .server2 { background: blue; }
+        .server3 { background: green; }
+    </style>
+</head>
+
+<body>
+
+<h1>Load Balancer Live Dashboard</h1>
+
+<div class="container">
+    <canvas id="chart" width="700" height="350"></canvas>
+
+    <div class="legend">
+        <div><span class="dot server1"></span>Server 3001 (slow)</div>
+        <div><span class="dot server2"></span>Server 3002 (average)</div>
+        <div><span class="dot server3"></span>Server 3003 (fast)</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+
+let history = {
+    3001: [],
+    3002: [],
+    3003: []
+};
+
+const colors = {
+    3001: "#ef4444",
+    3002: "#3b82f6",
+    3003: "#22c55e"
+};
+
+function drawGrid() {
+    ctx.strokeStyle = "#1f2937";
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i <= 10; i++) {
+        let y = i * 35;
+
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(700, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "10px Arial";
+        ctx.fillText(Math.round((10 - i) * 10), 5, y + 10);
+    }
+}
+
+function drawLabels() {
+    ctx.fillStyle = "#9ca3af";
+    ctx.font = "12px Arial";
+
+    ctx.fillText("Active Connections", 10, 15);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawGrid();
+    drawLabels();
+
+    Object.keys(history).forEach((server) => {
+        const data = history[server];
+
+        ctx.beginPath();
+        ctx.strokeStyle = colors[server];
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+
+        data.forEach((val, i) => {
+            const x = i * 14;
+            const y = 350 - val * 4;
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+
+        if (data.length > 0) {
+            const last = data[data.length - 1];
+            ctx.fillStyle = colors[server];
+            ctx.fillText(server, 660, 350 - last * 4);
+        }
+    });
+}
+
+async function update() {
+    try {
+        const res = await fetch("http://localhost:8080/metrics");
+        const data = await res.json();
+
+        for (let key in data) {
+            if (!history[key]) history[key] = [];
+
+            history[key].push(data[key].active);
+
+            if (history[key].length > 50) {
+                history[key].shift();
+            }
+        }
+
+        draw();
+
+    } catch (e) {
+        console.log("metrics error", e);
+    }
+}
+
+setInterval(update, 1000);
+</script>
+
+</body>
+</html>
