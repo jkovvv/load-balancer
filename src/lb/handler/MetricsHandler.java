@@ -22,7 +22,7 @@ public class MetricsHandler implements HttpHandler {
 
         StringBuilder json = new StringBuilder("{");
 
-        for (int i = 0; i < state.servers.length; i++) {
+        for (int i = 0; i < state.servers.size(); i++) {
 
             long avgLatency = 0;
 
@@ -37,7 +37,7 @@ public class MetricsHandler implements HttpHandler {
                     .append("\"avgLatencyMs\":").append(avgLatency)
                     .append("}");
 
-            if (i < state.servers.length - 1) {
+            if (i < state.servers.size() - 1) {
                 json.append(",");
             }
         }

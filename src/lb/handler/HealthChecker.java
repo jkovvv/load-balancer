@@ -25,10 +25,10 @@ public class HealthChecker {
 
         executor.submit(() -> {
             while (true) {
-                for (int i = 0; i < state.servers.length; i++) {
+                for (int i = 0; i < state.servers.size(); i++) {
                     try {
                         HttpRequest request = HttpRequest.newBuilder()
-                                .uri(URI.create(state.servers[i] + "/health"))
+                                .uri(URI.create(state.servers.get(i) + "/health"))
                                 .timeout(Duration.ofSeconds(2))
                                 .GET()
                                 .build();

@@ -11,13 +11,19 @@ import lb.strategy.WeightedLeastConnectionsStrategy;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 public class LoadBalancer {
 
     public static void main(String[] args) throws IOException {
 
-        BalancerState state = new BalancerState();
+        BalancerState state =
+                new BalancerState(
+                        List.of(
+                                "http://api-gateway:9000"
+                        )
+                );
 
         HttpClient client = HttpClient.newHttpClient();
 

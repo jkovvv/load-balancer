@@ -12,7 +12,7 @@ public class WeightedLeastConnectionsStrategy implements BalancerStrategy {
 
     public WeightedLeastConnectionsStrategy(BalancerState state) {
         this.state = state;
-        this.ewmaLatency = new double[state.servers.length];
+        this.ewmaLatency = new double[state.servers.size()];
     }
 
     @Override
@@ -21,7 +21,7 @@ public class WeightedLeastConnectionsStrategy implements BalancerStrategy {
         int best = -1;
         double bestScore = Double.MAX_VALUE;
 
-        for (int i = 0; i < state.servers.length; i++) {
+        for (int i = 0; i < state.servers.size(); i++) {
 
             if (!state.alive[i].get()) continue;
 
@@ -52,7 +52,7 @@ public class WeightedLeastConnectionsStrategy implements BalancerStrategy {
                             (ewmaLatency[i] * 0.8); // latency (smoothed)
 
             System.out.println(
-                    "SERVER " + (3001 + i)
+                    "SERVER " + state.servers.get(i)
                             + " active=" + active
                             + " latency=" + (int) ewmaLatency[i]
                             + " score=" + (int) score

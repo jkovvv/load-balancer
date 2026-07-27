@@ -1,28 +1,16 @@
 services:
+
   lb:
     build: .
+    container_name: load-balancer
     command: ["java", "-cp", "out", "lb.LoadBalancer"]
     ports:
       - "8080:8080"
-    depends_on:
-      - server1
-      - server2
-      - server3
 
-  server1:
-    build: .
-    command: ["java", "-cp", "out", "lb.SimpleServer", "1", "3001"]
-
-  server2:
-    build: .
-    command: ["java", "-cp", "out", "lb.SimpleServer", "2", "3002"]
-
-  server3:
-    build: .
-    command: ["java", "-cp", "out", "lb.SimpleServer", "3", "3003"]
 
   dashboard:
     image: nginx:alpine
+    container_name: lb-dashboard
     ports:
       - "3000:80"
     volumes:

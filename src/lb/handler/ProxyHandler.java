@@ -33,7 +33,7 @@ public class ProxyHandler implements HttpHandler {
             return;
         }
 
-        String target = state.servers[index];
+        String target = state.servers.get(index);
 
         state.active[index].incrementAndGet();
 
