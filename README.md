@@ -1,173 +1,274 @@
-# Java Docker Load Balancer
+# Java Distributed Load Balancer
 
-A simple distributed load balancer implemented in Java and deployed using Docker Compose.
+A custom distributed load balancer implemented in Java and deployed using Docker Compose.
 
-The project demonstrates how a load balancer distributes client requests between multiple backend server instances running in isolated Docker containers.
+The project demonstrates how a load balancer can act as an entry point for a microservice architecture by distributing client traffic, monitoring backend availability, and forwarding requests to healthy service instances.
+
+The load balancer is implemented from scratch using Java networking APIs without external frameworks.
+
+---
 
 ## Architecture
 
 The system consists of:
 
-- Load Balancer
-- Three backend servers
-- Web dashboard served by Nginx
+- Java Load Balancer
+- API Gateway
+- User Service
+- Product Service
+- PostgreSQL databases
 
 Architecture overview:
 
-```text
-                 Client
-                    |
-                    v
-          Load Balancer :8080
-                    |
-        +-----------+-----------+
-        |           |           |
-        v           v           v
-   Server 1     Server 2     Server 3
-    :3001        :3002        :3003
+    Client
+       |
+       v
+    Load Balancer :8080
+       |
+       v
+    API Gateway :9000
+       |
+       +----------------+
+       |                |
+       v                v
+ User Service      Product Service
+    :9001              :9002
+       |                |
+       v                v
+ Users Database   Products Database
 
 
-          Dashboard :3000
-              |
-             Nginx
-```
+The Load Balancer serves as the single entry point for client requests and forwards traffic to the API Gateway.
+
+---
 
 ## Technologies
 
 - Java 17
+- Java HTTP Client
+- Java Networking API
+- Java Concurrency Utilities
 - Docker
 - Docker Compose
-- Nginx
+
+---
 
 ## Project Structure
 
-```text
-LoadBalancer/
-│
-├── src/
-│   └── lb/
-│       ├── LoadBalancer.java
-│       ├── SimpleServer.java
-│       └── other Java classes
-│
-├── Dockerfile
-├── docker-compose.yml
-├── .dockerignore
-├── .gitignore
-├── run.bat
-└── README.md
-```
+    LoadBalancer/
+    |
+    ├── src/
+    │   └── lb/
+    │       ├── LoadBalancer.java
+    │       ├── SimpleServer.java
+    │       |
+    │       ├── core/
+    │       │   └── BalancerState.java
+    │       |
+    │       ├── handler/
+    │       │   ├── HealthChecker.java
+    │       │   ├── MetricsHandler.java
+    │       │   └── ProxyHandler.java
+    │       |
+    │       └── strategy/
+    │           ├── BalancerStrategy.java
+    │           └── WeightedLeastConnectionsStrategy.java
+    |
+    ├── Dockerfile
+    ├── docker-compose.yml
+    ├── .dockerignore
+    ├── run.bat
+    └── README.md
+
+---
 
 ## How It Works
 
-1. The client sends a request to the Load Balancer on port `8080`.
-2. The Load Balancer forwards the request to one of the available backend servers.
-3. Backend servers process the request and return a response.
-4. The response is returned to the client through the Load Balancer.
+1. Client sends an HTTP request to the Load Balancer on port 8080.
 
-Each backend server runs as a separate Docker container:
+2. The Load Balancer checks available backend services.
 
-- Server 1 → port `3001`
-- Server 2 → port `3002`
-- Server 3 → port `3003`
+3. A routing strategy selects the best available service.
+
+4. The request is forwarded to the API Gateway.
+
+5. The API Gateway routes the request to the correct microservice.
+
+6. The response is returned back to the client through the Load Balancer.
+
+---
+
+## Load Balancing Strategy
+
+The project implements a Weighted Least Connections strategy.
+
+The strategy considers:
+
+- Active connections
+- Server availability
+- Response latency
+
+The goal is to forward requests to the service instance with the lowest current load.
+
+---
+
+## Health Checking
+
+The Load Balancer continuously monitors backend availability.
+
+Health checks are performed periodically by sending:
+
+    GET /health
+
+to registered services.
+
+Unavailable services are automatically marked as inactive and removed from request routing.
+
+---
+
+## Metrics
+
+The Load Balancer provides monitoring information through:
+
+    GET /metrics
+
+Available information includes:
+
+- Active connections
+- Request count
+- Response latency
+- Service availability
+
+---
 
 ## Running the Project
 
 Make sure Docker is installed.
 
-Build and start all services:
+Clone the repository:
 
-```bash
-docker compose up --build
-```
+    git clone https://github.com/jkovvv/load-balancer.git
+
+Start the application:
+
+    docker compose up --build
+
+All services will start automatically.
+
+---
 
 ## Accessing the Application
 
-### Load Balancer
+Load Balancer:
 
-Open:
+    http://localhost:8080
 
-```text
-http://localhost:8080
-```
 
-Example response:
+Example request:
 
-```text
-Hello from Server 1
-```
+    curl localhost:8080/users
 
-Repeated requests are distributed between backend servers.
 
-### Dashboard
+Request flow:
 
-Open:
+    Client
+      |
+      v
+    Load Balancer
+      |
+      v
+    API Gateway
+      |
+      v
+    Microservice
 
-```text
-http://localhost:3000
-```
+---
 
 ## Docker Services
 
-| Service       | Port | Description                     |
-| ------------- | ---- | ------------------------------- |
+| Service | Port | Description |
+|---|---|---|
 | Load Balancer | 8080 | Entry point for client requests |
-| Server 1      | 3001 | Backend server instance         |
-| Server 2      | 3002 | Backend server instance         |
-| Server 3      | 3003 | Backend server instance         |
-| Dashboard     | 3000 | Nginx web interface             |
+| API Gateway | 9000 | Routes requests to microservices |
+| User Service | 9001 | User operations |
+| Product Service | 9002 | Product operations |
+| PostgreSQL | 5432/5433 | Application databases |
+
+---
 
 ## Useful Commands
 
 Start services:
 
-```bash
-docker compose up
-```
+    docker compose up
+
 
 Build images:
 
-```bash
-docker compose build
-```
+    docker compose build
 
-Start with rebuild:
 
-```bash
-docker compose up --build
-```
+Rebuild and start:
+
+    docker compose up --build
+
 
 Stop services:
 
-```bash
-docker compose down
-```
+    docker compose down
+
 
 Check running containers:
 
-```bash
-docker ps
-```
+    docker ps
+
 
 View logs:
 
-```bash
-docker compose logs
-```
+    docker compose logs
+
+---
 
 ## Features
 
-- Multiple backend server instances
-- Request forwarding through a load balancer
-- Docker containerization
-- Docker Compose orchestration
-- Independent backend services
-- Simple monitoring dashboard
+- Custom Java implementation without frameworks
+- Reverse proxy functionality
+- API Gateway integration
+- Health monitoring
+- Backend availability detection
+- Weighted Least Connections routing strategy
+- Request forwarding
+- Latency tracking
+- Metrics endpoint
+- Docker Compose deployment
+- Microservice architecture support
+
+---
 
 ## Future Improvements
 
-- Health checks for backend servers
-- Automatic removal of unavailable servers
-- More advanced load balancing algorithms
-- Metrics collection
-- Authentication and security layer
+- Support for multiple API Gateway instances
+- Dynamic service discovery
+- Advanced routing algorithms
+- Rate limiting
+- Circuit breaker pattern
+- Kubernetes deployment
+- Distributed monitoring
+
+---
+
+## Related Projects
+
+This project is part of a larger microservice ecosystem:
+
+API Gateway:
+https://github.com/jkovvv/api-gateway
+
+Microservices System:
+https://github.com/jkovvv/microservices-system
+
+User Service:
+https://github.com/jkovvv/user-service
+
+Product Service:
+https://github.com/jkovvv/product-service
